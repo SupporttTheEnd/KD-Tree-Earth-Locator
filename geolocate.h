@@ -1,3 +1,5 @@
+// CMSC 341 - Fall 2023 - HW5
+
 #ifndef GEOLOCATE_H
 #define GEOLOCATE_H
 #include <iostream>
@@ -63,6 +65,7 @@ private:
     void insert(const GeoPoint& point, GeoPoint*& node, int depth);
     void nearest(const GeoPoint& point, GeoPoint*& node, int depth, GeoPoint& nearest);
     double calculateDistance(const GeoPoint& point1, const GeoPoint& point2);
+    double toRadians(const double& degree);
 };
 
 #endif

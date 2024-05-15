@@ -1,3 +1,4 @@
+// UMBC - CMSC 341 - Fall 2023 - HW5
 // Title: geolocate.cpp
 // Author: Andrew Tang
 // Date: 12/7/2023
@@ -31,18 +32,24 @@ void KDTree::clear(GeoPoint*& node){
     }
 }
 
-
+// Name - insert(const GeoPoint& point)
+// Desc - wrapper that calls overloaded insert and also checks for the validity of parameters. 
 void KDTree::insert(const GeoPoint& point){
+    // check for valid latitude
     if (point.getLatitude() < -90.0 || point.getLatitude() > 90.0) {
+        cout << "Attempted to insert node with invalid parameters" << endl; 
         return; 
     }
-
+    // check for valid longitude
     if (point.getLongitude() < -180.0 || point.getLongitude() > 180.0) {
+        cout << "Attempted to insert node with invalid parameters" << endl; 
         return; 
     }
     insert(point, m_root, 0);
 }
 
+// Name - insert(const GeoPoint& point, GeoPoint*& node, int depth)
+// Desc - inserts based off of KD tree principles
 void KDTree::insert(const GeoPoint& point, GeoPoint*& node, int depth){
     // base case if empty
     if (node == nullptr) {
@@ -57,59 +64,100 @@ void KDTree::insert(const GeoPoint& point, GeoPoint*& node, int depth){
     if ((compLat && point.getLatitude() < node->getLatitude()) ||
         (!compLat && point.getLongitude() < node->getLongitude())) {
         insert(point, node->m_left, depth + 1);
-    } else {
+    } 
+    else {
         insert(point, node->m_right, depth + 1);
     }
     
 }
 
+// Name - nearest(const GeoPoint& point)
+// Desc - wrapper for nearest neighbor search and also checks if tree is empty
 GeoPoint KDTree::nearest(const GeoPoint& point) {
-    GeoPoint close; 
-    nearest(point, m_root, 0, close); 
-    return close;
+    GeoPoint close;
+    // check if the tree is empty
+    if (m_root == nullptr){
+        cout << "Empty tree; simply returning empty node" << endl; 
+        return close; 
+    }
+    // set the default closest to be the root first
+    close = *m_root;
+    nearest(point, m_root, 0, close);
+    return close; 
 }
 
 void KDTree::nearest(const GeoPoint& point, GeoPoint*& node, int depth, GeoPoint& close) {
-    // Base case: If the current node is NULL, return
+    // if the current node is null, return
     if (node == nullptr) {
-        return;
+        return; 
     }
 
+    // determine whether to compare latitude or longitude based on the depth
     bool compLat = (depth % 2 == 0);
 
-    // Check if the current node is closer than the currently known nearest neighbor
+    // check if the current node is closer than the currently known closest
     if (calculateDistance(point, *node) < calculateDistance(point, close)) {
         close = *node;
     }
 
-    // Visit subtrees in the most promising order
+    // calculate the distance from the point to the boundary of the current node and considers the earth's curvature, maintianing the same lat/long
+    double distance;
+    if (compLat) {
+        distance = calculateDistance(GeoPoint(point.getLatitude(),point.getLongitude()), GeoPoint(node->getLatitude(),point.getLongitude()));
+    } else {
+        distance = calculateDistance(GeoPoint(point.getLatitude(),point.getLongitude()), GeoPoint(point.getLatitude(),node->getLongitude()));
+    }
+
+    // visit subtrees in the most promising order
     if ((compLat && point.getLatitude() < node->getLatitude()) ||
         (!compLat && point.getLongitude() < node->getLongitude())) {
         nearest(point, node->m_left, depth + 1, close);
-        nearest(point, node->m_right, depth + 1, close);
+
+        // check if the other branch is worth exploring
+        if (distance < calculateDistance(point, close)) {
+            nearest(point, node->m_right, depth + 1, close);
+        }
     } 
     else {
-        nearest(point, node->m_left, depth + 1, close);
         nearest(point, node->m_right, depth + 1, close);
+
+        // check if the other branch is worth exploring
+        if (distance < calculateDistance(point, close)) {
+            nearest(point, node->m_left, depth + 1, close);
+        }
     }
 }
 
-
+// Name - calculateDistance(const GeoPoint& point1, const GeoPoint& point2)
+// Desc - calculates the distance between two points using the haversine formula
 double KDTree::calculateDistance(const GeoPoint& point1, const GeoPoint& point2) {
-    // Calculate differences in latitude and longitude
-    double latDiff = point2.getLatitude() - point1.getLatitude();
-    double lonDiff = point2.getLongitude() - point1.getLongitude();
+    // for sphere convert everything to be in terms of radian
+    double lat1 = toRadians(point1.getLatitude());
+    double long1 = toRadians(point1.getLongitude());
+    double lat2 = toRadians(point2.getLatitude());
+    double long2 = toRadians(point2.getLongitude());
 
-    if (abs(lonDiff) > 180.0) {
-        lonDiff = 360.0 - abs(lonDiff);
-    }
+    double latDifference = lat2 - lat1;
+    double longDifference = long2 - long1;
 
-    // Simple distance approximation (ignoring curvature)
-    double distance = sqrt(latDiff * latDiff + lonDiff * lonDiff);
-
-    return distance;
+    // use the haversine formula; proof is very tough, but I used the formula from https://www.movable-type.co.uk/scripts/latlong.html
+    // Haversine formula:
+    // a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+    // c = 2 ⋅ atan2( √a, √(1−a) )
+    // d = R ⋅ c
+    // its used to calculate the distance between points on a spherical surface
+    // this implementation is made to fit lat and long
+    double a = sin(latDifference / 2.0) * sin(latDifference / 2.0) + cos(lat1) * cos(lat2) * sin(longDifference / 2.0) * sin(longDifference / 2.0);
+    double c = 2.0 * atan2(sqrt(a), sqrt(1.0 - a));
+    // 6371 is an approx estimate of the radius of earth in km
+    return 6371.0 * c;
 }
 
+// Name - toRadians(const double& degree)
+// Desc - changes degrees into radians
+double KDTree::toRadians(const double& degree){
+    return (((M_PI) / 180) * degree);
+}
 
 // Name - dump()
 // Desc - outputs the contents of the tree
