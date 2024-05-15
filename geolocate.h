@@ -1,5 +1,3 @@
-// CMSC 341 - Fall 2023 - HW5
-
 #ifndef GEOLOCATE_H
 #define GEOLOCATE_H
 #include <iostream>
