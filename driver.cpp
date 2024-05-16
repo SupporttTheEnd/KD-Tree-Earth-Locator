@@ -1,4 +1,3 @@
-// UMBC - CMSC 341 - Fall 2023 - HW5
 // Title: geolocate.cpp
 // Author: Andrew Tang
 // Date: 12/7/2023
