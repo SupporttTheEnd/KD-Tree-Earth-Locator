@@ -1,4 +1,4 @@
-// CMSC 341 - Fall 2023 - HW5
+// Fall 2023
 
 #ifndef GEOLOCATE_H
 #define GEOLOCATE_H
