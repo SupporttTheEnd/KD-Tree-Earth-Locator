@@ -57,7 +57,7 @@ private:
     GeoPoint* m_root; 
 
     // ***************************************************
-    // Any private helper functions must be delared here!
+    // Any private helper functions
     // ***************************************************
     // overloaded functions
     void dump(GeoPoint* point) const;
